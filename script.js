@@ -1,6 +1,6 @@
 const url = "https://kampliteratuur.nl/wp-json/wp/v2/"
 
-// Main function
+// Main
 const bibliographyPage = async (url) => {
 
 	// fetch data
@@ -10,7 +10,7 @@ const bibliographyPage = async (url) => {
 	const publisherArray = await getPagedItems(url + "uitgever?per_page=100");
 
 	// build treeArray
-	renderFilteredArray(bibliographyFilter(buildCampTree(campArray, authorArray, titleArray, publisherArray)));
+	renderFilteredArray(bibliographyFilter(campDataSet(campArray, authorArray, titleArray, publisherArray)));
 
 }
 
@@ -23,6 +23,7 @@ bibliographyPage(url)
 async function getPagedItems(url) {
 	const response = await fetch(url);
 	const json = await response.json();
+	console.log(json)
 	return json
 }
 
@@ -36,15 +37,89 @@ function nodeMapById(array) {
 	return nodeMap
 }
 
-function buildCampTree(campArray, authorArray, titleArray) {
 
-	// Construct campMap for accessing item.parent as key
+function nodePullByValue(sourceNode, sourceKey, targetMap) {
+		for (let x in sourceNode[sourceKey]) {
+			const targetId = sourceNode[sourceKey][x]
+			sourceNode[sourceKey][x] = targetMap[targetId];		
+		}
+}
 
+function nodePushIntoTargetKeyByValue(sourceNode, sourceKey, targetMap, targetKey) {
+			const targetId = sourceNode[sourceKey]
+			console.log(targetId)
+
+			
+			targetMap[targetId][targetKey] = sourceNode[sourceKey]
+}
+
+function nodeAddKey(node, key, value) {
+		Object.defineProperty(node, key, {value: value})
+}
+
+function nodeSurfaceNestedKey(node, key, parentKey) {
+		const nestedKey = node[parentKey][key];
+		Object.defineProperty(node, key, {value: nestedKey})
+}
+
+
+// The is the big function
+function campDataSet(campArray, authorArray, titleArray, publisherArray) {
+
+	// create nodeMaps of arrays so they can be retrieved by their id
 	let campMap = nodeMapById(campArray);
 	let authorMap = nodeMapById(authorArray);
 	let titleMap = nodeMapById(titleArray);
+	let publisherMap = nodeMapById(publisherArray);
 
-	arrayById(key)
+	// process titleMap	
+	for (let x in titleMap) {
+		const title = titleMap[x]
+		
+		nodeSurfaceNestedKey(title, "auteurs", "acf")
+		nodeSurfaceNestedKey(title, "redacteuren", "acf")
+		nodeSurfaceNestedKey(title, "vertalers", "acf")
+		nodeSurfaceNestedKey(title, "bijdragen_auteurs", "acf")
+		nodeSurfaceNestedKey(title, "bijdragen_vertalers", "acf")
+
+		nodePullByValue(title, "uitgever", publisherMap)
+		nodePullByValue(title, "auteurs", authorMap)
+		nodePullByValue(title, "redacteuren", authorMap)
+		nodePullByValue(title, "vertalers", authorMap)
+		nodePullByValue(title, "bijdragen_auteurs", authorMap)
+		nodePullByValue(title, "bijdragen_vertalers", authorMap)
+
+	}
+
+	console.log(campMap)
+	// process campMap
+	for (let x in campMap) {
+		const camp = campMap[x]
+
+		// add children to parents
+		if (camp.parent !== 0) {
+			const parent = campMap[camp.parent];
+			if (! Object.hasOwn(parent, 'children')) {
+				nodeAddKey(parent, "children", [])
+			}
+			campMap[camp.parent].children.push(camp);
+		}
+
+		//
+
+		
+
+	}
+
+	console.log(campMap)
+
+
+
+
+
+
+	return
+
 
 	// Iterate over titleArray and push into corresponding camp in campMap 
 	for (let x in titleArray) {
@@ -57,7 +132,6 @@ function buildCampTree(campArray, authorArray, titleArray) {
 
 	}
 
-	for (let x in 
 
 	// Iterate over campArray and create tree in campMap (taking advantage of copy by reference)
 	for (let i in campArray) {
@@ -76,7 +150,6 @@ function buildCampTree(campArray, authorArray, titleArray) {
 		}
 	}
 
-	console.log(treeArray);
 	return treeArray;
 }
 
@@ -88,7 +161,6 @@ function bibliographyFilter(treeArray) {
 		filteredArray.push(treeArray[i].name)
 	}
 
-	console.log(filteredArray)
 	return filteredArray
 
 
