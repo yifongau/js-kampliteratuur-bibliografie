@@ -1,7 +1,8 @@
-const url = "https://kampliteratuur.nl/wp-json/wp/v2/"
+// global variables
+const url = "https://kampliteratuur.nl/wp-json/wp/v2/" 
 
-// Main
-const bibliographyPage = async (url) => {
+// entrypoint
+const main = async (url) => {
 
 	// fetch data
 	const campArray = await getPagedItems(url + "kamp?per_page=100");
@@ -9,16 +10,16 @@ const bibliographyPage = async (url) => {
 	const titleArray = await getPagedItems(url + "bib-titel?per_page=100");
 	const publisherArray = await getPagedItems(url + "uitgever?per_page=100");
 
-	// build treeArray
-	renderFilteredArray(bibliographyFilter(campDataSet(campArray, authorArray, titleArray, publisherArray)));
+	// parse, filter and render data
+	renderBibByParent(campDataSet(campArray, authorArray, titleArray, publisherArray), noFilter, mlaStyle, authorSort);
 
 }
 
 
-bibliographyPage(url)
+main(url)
 
 
-// Functions
+// request functions
 
 async function getPagedItems(url) {
 	const response = await fetch(url);
@@ -27,6 +28,7 @@ async function getPagedItems(url) {
 }
 
 
+// dataset functions 
 function nodeMapById(array) {
 	nodeMap = {};
 	for (let i in array) {
@@ -66,8 +68,21 @@ function nodeSurfaceNestedKey(node, key, parentKey) {
 		Object.defineProperty(node, key, {value: nestedKey})
 }
 
+// render functions
 
-// The is the big function
+function noFilter(item) {
+	return item
+}
+
+function mlaStyle(item) {
+	return item
+}
+
+function authorSort(itemList) {
+}
+
+
+// composed functions
 function campDataSet(campArray, authorArray, titleArray, publisherArray) {
 
 	let campDataSet = [];
@@ -127,7 +142,11 @@ function campDataSet(campArray, authorArray, titleArray, publisherArray) {
 	return campDataSet;
 }
 
-function bibliographyFilter(dataSet) {
+
+function renderBibByParent(dataSet, filter, style, sort) {
+
+	console.log(dataSet)
+	return
 
 	bibliography = []
 
@@ -144,7 +163,7 @@ function bibliographyFilter(dataSet) {
 			let m = [ title.auteurs, title.redacteuren, title.vertalers, title.bijdragen_auteurs, title.bijdragen_vertalers ]
 
 			// if has author
-			if (m[0]]) {
+			if (m[0]) {
 
 				if (!m[1] && !m[2]) {
 
@@ -206,9 +225,8 @@ function bibliographyFilter(dataSet) {
 	}
 
 	return bibliography
-}
 
-function renderFilteredArray(bibliography) {
+
 
 	let output = document.getElementById('bibliografieOutput')
 
@@ -226,7 +244,6 @@ function renderFilteredArray(bibliography) {
 		}
 
 	}
-
 
 }
 
